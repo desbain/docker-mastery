@@ -1,147 +1,167 @@
 # Docker Mastery Project
 ## George Awa, CISSP | DevSecOps Engineer | Project 5
 
-A hands-on Docker project covering everything from basic container
-commands to production-grade hardened images, multi-container Compose
-stacks, network isolation, volume management, and automated security
-scanning — all with a working GitHub Actions pipeline.
+A hands-on Docker mastery project working through every core concept from
+basic container commands to production-grade hardened images, multi-container
+Compose stacks, network isolation, and security scanning. All modules
+practiced locally and committed to GitHub as portfolio evidence.
+
+---
+
+## Progress Tracker
+
+| Module | Topic | Status |
+|--------|-------|--------|
+| 1 | Docker Basics — images, containers, inspect | Complete |
+| 2 | Dockerfile — basic, multi-stage, hardened | Complete |
+| 3 | Docker Compose — TaskFlow full-stack app | Complete |
+| 4 | Docker Networking — zero-trust isolation | Complete |
+| 5 | Docker Volumes | In Progress |
+| 6 | Docker Security Audit | Pending |
+
+---
+
+## Module 1 — Docker Basics
+
+What was practiced:
+- Pulled nginx:alpine, python:3.12-alpine, redis:7-alpine
+- Alpine images are 40-60MB vs 1GB+ for full images
+- Ran nginx container with port mapping -p 8080:80
+- Shelled inside running container with docker exec -it
+- Extracted files from container with docker cp
+- Read container metadata with docker inspect
+
+Security findings from docker inspect:
+- Container ran as root — fixed in Module 2
+- ReadonlyRootfs: false — fixed in Module 2
+- Memory: 0 (no limit) — fixed in Module 2
+
+---
+
+## Module 2 — Dockerfile and Multi-Stage Builds
+
+Three images built and compared:
+
+| Image | Base | Size | User | Gunicorn |
+|-------|------|------|------|----------|
+| docker-mastery-basic:v1 | python:3.12-slim | 133MB | root | no |
+| docker-mastery-multistage:v1 | python:3.12-slim | 125MB | root | yes |
+| docker-mastery-hardened:v1 | python:3.12-alpine | 60MB | appuser | yes |
+
+55% size reduction from basic to hardened.
+
+Security hardening proved:
+- whoami returned appuser — NOT root
+- uid=1000(appuser) gid=101(appgroup)
+- Write to /app blocked — read-only filesystem confirmed
+- Write to /tmp/app allowed — gunicorn temp dir works
+
+---
+
+## Module 3 — Docker Compose and TaskFlow Full-Stack App
+
+Built a real production full-stack application.
+
+### TaskFlow — DevSecOps Task Manager
+
+![TaskFlow Kanban Board](taskflow/taskflow-kanban.png)
+
+Stack:
+- React 18 frontend — Kanban board and Dashboard
+- Python Flask REST API — CRUD, Redis caching, audit logging
+- PostgreSQL 16 — tasks, users, audit_logs tables
+- Redis 7 — API response caching with 30s TTL
+- Nginx — serves React, proxies /api requests to Flask
+
+Run it:
+cd taskflow
+mkdir -p secrets
+echo "TaskFlowDBPass2024!" > secrets/db_password.txt
+docker compose up -d --build
+
+Open http://localhost:3000
+
+Docker Compose concepts demonstrated:
+- Docker secrets — DB password never in environment variables
+- Named volumes — postgres_data and redis_data persist across restarts
+- Network isolation — frontend bridge and backend internal: true
+- Health checks with depends_on condition: service_healthy
+- Resource limits — memory and CPU limits on all services
+- cap_drop ALL and no-new-privileges on API container
+
+All 4 containers healthy:
+- taskflow-postgres Healthy
+- taskflow-redis Healthy
+- taskflow-api Healthy
+- taskflow-frontend Started on http://localhost:3000
+
+---
+
+## Module 4 — Docker Networking
+
+Zero-trust network isolation proved with live tests:
+
+| Test | Result | Proves |
+|------|--------|--------|
+| ping net-test-2 by name | 0% packet loss | Docker DNS resolves container names |
+| ping 8.8.8.8 from internal network | 100% packet loss | internal: true blocks all internet |
+| ping 8.8.8.8 from bridge network | 0% packet loss | Bridge network has full internet |
+| ping across different networks | bad address | Containers invisible across networks |
+| ping after docker network connect | 0% packet loss | Controlled bridge like taskflow-api |
+
+How this maps to TaskFlow:
+- taskflow_frontend internal: false — nginx can reach internet
+- taskflow_backend internal: true — postgres and redis cannot reach internet
+- If postgres is compromised it cannot make outbound connections or exfiltrate data
 
 ---
 
 ## Project Structure
 
-```
 docker-mastery/
-├── app/
-│   ├── app.py                          # Flask app used across all modules
-│   └── requirements.txt
-├── dockerfiles/
-│   ├── basic/Dockerfile                # Module 1 — Learn Dockerfile instructions
-│   ├── multi-stage/Dockerfile          # Module 2 — Reduce image size
-│   └── hardened/Dockerfile             # Module 3 — Production security hardening
-├── compose/
-│   ├── web-stack/docker-compose.yml    # Module 4 — Flask + PostgreSQL + Redis + Nginx
-│   └── monitoring-stack/docker-compose.yml  # Module 4b — Prometheus + Grafana
-├── networking/
-│   └── networking-demo.sh              # Module 5 — Bridge, internal, zero-trust
-├── volumes/
-│   └── volumes-demo.sh                 # Module 6 — Named, bind, tmpfs
-├── security/
-│   └── security-audit.sh              # Module 7 — Container security audit
-├── scripts/
-│   └── practice-commands.sh           # Module 1 — All basic Docker commands
-└── .github/workflows/pipeline.yml     # CI/CD — lint, build, Trivy, push to GHCR
-```
+- app/ — Flask app used across modules
+- dockerfiles/basic/ — Module 2 learn Dockerfile instructions
+- dockerfiles/multi-stage/ — Module 2 reduce image size
+- dockerfiles/hardened/ — Module 2 production security hardening
+- compose/web-stack/ — Flask PostgreSQL Redis Nginx
+- compose/monitoring-stack/ — Prometheus Grafana cAdvisor
+- taskflow/ — Module 3 full-stack React app with screenshot
+- networking/ — Module 4 networking demo script
+- volumes/ — Module 5 volumes demo script
+- security/ — Module 6 security audit script
+- docs/ — module notes and networking examples
 
 ---
 
-## Modules
+## Security Concepts Demonstrated
 
-| Module | File | What You Learn |
-|--------|------|---------------|
-| 1 — Basics | `scripts/practice-commands.sh` | images, run, ps, logs, exec, stats |
-| 2 — Dockerfile | `dockerfiles/basic/Dockerfile` | FROM, RUN, COPY, CMD, EXPOSE, ENV |
-| 3 — Multi-stage | `dockerfiles/multi-stage/Dockerfile` | Reduce image size, separate build/runtime |
-| 4 — Hardened | `dockerfiles/hardened/Dockerfile` | Non-root, read-only FS, Alpine, least privilege |
-| 5 — Compose | `compose/web-stack/` | Multi-container, secrets, networks, volumes |
-| 6 — Monitoring | `compose/monitoring-stack/` | Prometheus, Grafana, cAdvisor |
-| 7 — Networking | `networking/networking-demo.sh` | Bridge, internal, zero-trust connectivity |
-| 8 — Volumes | `volumes/volumes-demo.sh` | Named, bind mount, tmpfs |
-| 9 — Security | `security/security-audit.sh` | Container audit, Trivy scanning |
-
----
-
-## Step-by-Step Setup
-
-### 1. Clone the repo
-```bash
-git clone https://github.com/desbain/docker-mastery.git
-cd docker-mastery
-```
-
-### 2. Start with Module 1 — Docker basics
-```bash
-# Run commands one by one from this file
-cat scripts/practice-commands.sh
-```
-
-### 3. Build all three images and compare sizes
-```bash
-docker build -t docker-mastery-basic:v1 -f dockerfiles/basic/Dockerfile .
-docker build -t docker-mastery-multistage:v1 -f dockerfiles/multi-stage/Dockerfile .
-docker build -t docker-mastery-hardened:v1 -f dockerfiles/hardened/Dockerfile .
-docker images | grep docker-mastery
-```
-
-### 4. Run the web stack
-```bash
-cd compose/web-stack
-mkdir -p secrets
-echo "MySecureDBPass123" > secrets/db_password.txt
-echo "MySecureRedisPass" > secrets/redis_password.txt
-docker compose up -d
-docker compose ps
-curl http://localhost
-docker compose logs -f app
-docker compose down -v
-```
-
-### 5. Run the monitoring stack
-```bash
-cd compose/monitoring-stack
-docker compose up -d
-# Grafana:    http://localhost:3000  (admin/admin123)
-# Prometheus: http://localhost:9090
-# cAdvisor:   http://localhost:8080
-docker compose down
-```
-
-### 6. Test networking
-```bash
-bash networking/networking-demo.sh
-```
-
-### 7. Test volumes
-```bash
-bash volumes/volumes-demo.sh
-```
-
-### 8. Run security audit
-```bash
-bash security/security-audit.sh docker-mastery-hardened:v1
-```
+| Concept | Where Applied | Module |
+|---------|--------------|--------|
+| Non-root user appuser UID 1000 | hardened Dockerfile | 2 |
+| Read-only filesystem | hardened Dockerfile | 2 |
+| Alpine base 60MB vs 133MB | hardened Dockerfile | 2 |
+| Multi-stage build | all production images | 2 |
+| Docker secrets not env vars | TaskFlow Compose | 3 |
+| Network isolation internal: true | TaskFlow Compose | 3 |
+| Health checks with depends_on | TaskFlow Compose | 3 |
+| Resource limits memory and CPU | TaskFlow Compose | 3 |
+| cap_drop ALL | TaskFlow API container | 3 |
+| no-new-privileges | TaskFlow API container | 3 |
+| Zero-trust proved with ping tests | Networking module | 4 |
 
 ---
 
-## Key Security Concepts Demonstrated
+## Frameworks Addressed
 
-| Concept | Implementation |
-|---------|---------------|
-| Non-root user | `adduser -S appuser`, `USER appuser` |
-| Read-only filesystem | `--read-only` + `--tmpfs /tmp` |
-| Drop capabilities | `--cap-drop ALL` |
-| No privilege escalation | `--security-opt no-new-privileges` |
-| Resource limits | `--memory`, `--cpus` |
-| Network isolation | `internal: true` networks per tier |
-| Secrets management | Docker secrets (not env vars) |
-| Image scanning | Trivy in GitHub Actions |
-| Dockerfile linting | hadolint in GitHub Actions |
-| Multi-stage builds | Separate builder and final stages |
-
----
-
-## GitHub Actions Pipeline
-
-Every push triggers:
-1. **hadolint** — Dockerfile lint (catches bad practices)
-2. **Docker build** — builds all 3 images
-3. **Image size comparison** — shows the benefit of multi-stage
-4. **Trivy scan** — scans hardened image for CVEs
-5. **Push to GHCR** — pushes to GitHub Container Registry (main only)
+- CIS Docker Benchmark — non-root, read-only, no privileged containers
+- NIST 800-190 — Application Container Security Guide
+- OWASP Docker Security — secrets management, network isolation
+- PCI-DSS — Req 1 network segmentation, Req 6.3 vulnerability management
 
 ---
 
 ## Author
 
-**George Awa, CISSP** | DevSecOps Engineer  
-[LinkedIn](https://linkedin.com/in/georgeawa) · [GitHub](https://github.com/desbain)
+George Awa, CISSP | DevSecOps Engineer
+LinkedIn: https://linkedin.com/in/georgeawa
+GitHub: https://github.com/desbain

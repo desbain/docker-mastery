@@ -115,6 +115,34 @@ How this maps to TaskFlow:
 - If postgres is compromised it cannot make outbound connections or exfiltrate data
 
 ---
+## Module 5 — Docker Volumes
+
+Three volume types proved with live tests.
+
+| Type | Test | Result |
+|------|------|--------|
+| Named volume | Data persists across containers | Proved |
+| Named volume | Two containers share live data | Proved |
+| Bind mount | Host files visible inside container | Proved |
+| Bind mount | Read-only blocks writes | Proved |
+| tmpfs | In-memory, never hits disk | Proved |
+| Volume backup | tar from volume to host | Proved |
+
+Key findings:
+- Named volumes at /var/lib/docker/volumes/ — Docker managed
+- taskflow_postgres_data persists your TaskFlow tasks across restarts
+- Bind mount :ro flag blocked write attempt — host files protected
+- tmpfs never touches disk — ideal for secrets and session tokens
+- Volume backup with tar using a temporary container
+
+Commands learned:
+docker volume create name
+docker volume ls
+docker volume inspect name
+docker run -v volume:/path container
+docker run -v folder:/path:ro container
+docker run --tmpfs /tmp:rw,noexec,nosuid,size=64m container
+export MSYS_NO_PATHCONV=1 — required on Windows Git Bash
 
 ## Project Structure
 

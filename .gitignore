@@ -4,3 +4,4 @@ __pycache__/
 secrets/
 *.tar
 .DS_Store
+*.tar.gz

@@ -16,8 +16,8 @@ practiced locally and committed to GitHub as portfolio evidence.
 | 2 | Dockerfile — basic, multi-stage, hardened | Complete |
 | 3 | Docker Compose — TaskFlow full-stack app | Complete |
 | 4 | Docker Networking — zero-trust isolation | Complete |
-| 5 | Docker Volumes | In Progress |
-| 6 | Docker Security Audit | Pending |
+| 5 | Docker Volumes | Complete |
+| 6 | Docker Security Audit | Complete |
 
 ---
 

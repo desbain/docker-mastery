@@ -1,0 +1,7 @@
+secrets/
+node_modules/
+frontend/build/
+__pycache__/
+*.pyc
+.env
+*.log

@@ -148,6 +148,8 @@ docker-mastery/
 | cap_drop ALL | TaskFlow API container | 3 |
 | no-new-privileges | TaskFlow API container | 3 |
 | Zero-trust proved with ping tests | Networking module | 4 |
+| Security audit — CIS Docker Benchmark checks | security-audit.sh | 6 |
+| Trivy scan — 0 CVEs on hardened image | docker-mastery-hardened:v1 | 6 |
 
 ---
 
